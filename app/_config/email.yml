@@ -1,21 +1,21 @@
 ---
-Name: shaun-bare-bones/email-config-production
+Name: bare-bones/email-config-production
 Only:
   environment: 'prod'
 ---
 SilverStripe\Control\Email\Email:
   admin_email:
-    no-reply@shaun-bare-bones.cwp.govt.nz: 'ShaunBareBones'
+    no-reply@bare-bones.cwp.govt.nz: 'BareBones'
 ---
 
 ---
-Name: shaun-bare-bones/email-config-uat
+Name: bare-bones/email-config-uat
 Only:
   environment: 'test'
 ---
 SilverStripe\Control\Email\Email:
   admin_email:
-    no-reply@shaun-bare-bones-uat.cwp.govt.nz:
-      'ShaunBareBones UAT'
+    no-reply@bare-bones-uat.cwp.govt.nz:
+      'BareBones UAT'
 ---
 

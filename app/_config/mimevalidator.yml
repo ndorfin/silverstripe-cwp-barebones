@@ -1,5 +1,5 @@
 ---
-Name: shaun-bare-bones/mimeuploadvalidator
+Name: bare-bones/mimeuploadvalidator
 After: '#mimeuploadvalidator'
 Only:
   moduleexists: 'silverstripe/mimevalidator'

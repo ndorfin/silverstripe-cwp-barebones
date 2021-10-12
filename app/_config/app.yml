@@ -1,8 +1,8 @@
 ---
-Name: shaun-bare-bones
+Name: bare-bones
 ---
 SilverStripe\Core\Manifest\ModuleManifest:
-  project: 'shaun-bare-bones'
+  project: 'bare-bones'
 
 SilverStripe\Admin\LeftAndMain:
   extra_requirements_css:

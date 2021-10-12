@@ -1,5 +1,5 @@
 ---
-Name: shaun-bare-bones/assetsflysystem
+Name: bare-bones/assetsflysystem
 After: '#assetsflysystem'
 ---
 # SilverStripe 4.4 changes the way files are resolved. `silverstripe-assets` resolves files using a variety of formats

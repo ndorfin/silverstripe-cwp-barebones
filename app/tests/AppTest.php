@@ -1,8 +1,8 @@
 <?php
 
-namespace ShaunBareBones\Tests;
+namespace BareBones\Tests;
 
-use ShaunBareBones\Tests\Pages\Page as TestPage;
+use BareBones\Tests\Pages\Page as TestPage;
 use SilverStripe\Dev\FunctionalTest;
 
 class AppTest extends FunctionalTest

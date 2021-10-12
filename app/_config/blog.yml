@@ -1,5 +1,5 @@
 ---
-Name: shaun-bare-bones/blog-widgets-config
+Name: bare-bones/blog-widgets-config
 Only:
   moduleexists:
     - silverstripe/blog
@@ -15,7 +15,7 @@ SilverStripe\Blog\Model\BlogPost:
     - SilverStripe\Widgets\Extensions\WidgetPageExtension
 
 ---
-Name: shaun-bare-bones/blog-config
+Name: bare-bones/blog-config
 Only:
   moduleexists:
     - silverstripe/blog
@@ -50,7 +50,7 @@ SilverStripe\Blog\Model\BlogPost:
     order_comments_by: '"Created" ASC'
 
 ---
-Name: shaun-bare-bones/akismetconfig
+Name: bare-bones/akismetconfig
 Only:
   moduleexists: silverstripe/akismet
 ---
@@ -64,7 +64,7 @@ SilverStripe\Akismet\AkismetSpamProtector:
   save_spam: true
 
 ---
-Name: shaun-bare-bones/comment-spamprotection
+Name: bare-bones/comment-spamprotection
 Only:
   moduleexists:
     - silverstripe/comments

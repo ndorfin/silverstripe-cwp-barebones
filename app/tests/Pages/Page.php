@@ -1,5 +1,5 @@
 <?php
-namespace ShaunBareBones\Tests\Pages;
+namespace BareBones\Tests\Pages;
 
 use CWP\CWP\PageTypes\BasePage;
 

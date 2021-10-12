@@ -1,6 +1,6 @@
 <?php
 
-namespace ShaunBareBones;
+namespace BareBones;
 
 use CWP\CWP\PageTypes\BaseHomePage;
 

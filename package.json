@@ -1,7 +1,7 @@
 {
-  "name": "shaun-bare-bones",
+  "name": "bare-bones",
   "private": true,
-  "description": "shaun-bare-bones website",
+  "description": "bare-bones website",
   "directories": {
     "test": "tests"
   },

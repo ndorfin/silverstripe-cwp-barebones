@@ -1,47 +1,10 @@
-# Silverstripe CWP Template Project
-
-## Meta README
-
-_You can erase this section after completing it_
-
-### Pre-project
-
-CWP accounts/environments take up a long time to get setup. Make sure this has
-been requested before removing comment.
-
-CWP will need a personal account for each of your developers. It will also
-require a Release Manager role. Make a list of people with e-mail, name and
-role. Attach the list with your request to your client. With this information
-they will be able to create the request and immediately provide Ackama with the
-required permission to start using the account
-
-Please read our
-[SilverStripe CWP Project Management](https://github.com/ackama/wiki/wiki/SilverStripe-CWP-Project-Management)
-wiki page for more thorough information regarding managing a CWP project.
-
-Also refer to our
-[Ackama README Template](https://github.com/ackama/wiki/wiki/Ackama-README-Template)
-wiki page to better customise this README
+# BareBones Silverstripe CWP Theme
 
 ## Purpose
 
-_Fill in purpose of this project_
+This project is an attempt at reducing as much of the front-end cruft (that comes with CWP themes) as possible.
 
 ### Project Setup
-
-#### Create your project from this repository
-
-* Remove this title after setting up the project, to avoid confusion *
-
-Execute the following to create a new project based of this repository, updated
-to the latest version of the SilverStripe stack
-
-```bash
-$ composer create-project --no-install ackama/silverstripe-cwp-template your-cwp-project
-$ cd your-cwp-project
-```
-
-Cloning this repository and working from there will not work as expected.
 
 #### Platform Requirements
 
@@ -57,39 +20,14 @@ if you want or need to match your host environment's versions
 
 #### Rename Resources
 
-* Remove this title after setting up the project, to avoid confusion *
-
 Defaults for namespaces and prefixes have been set so they are easily
 replaceable after initialising the project. Please do the following
 replacements:
 
-- Replace `shaun-bare-bones` in all files with the name of your
+- Replace `bare-bones` in all files with the name of your
   project.
-- Replace `ShaunBareBones` in all files with the namespace of your
+- Replace `BareBones` in all files with the namespace of your
   project.
-
-#### Repository Setup
-
-* Remove this title after setting up the project, to avoid confusion *
-
-After cloning the project, you will have to commit this into a repository. You
-can safely commit all created files. The available pipeline uses `main` as the
-development branch and `deployment` as production. `deployment` is completely
-managed by the pipeline after the initial setup.
-
-_Don't forget to give appropriate access to your team!_
-
-```shell
-git init .
-git add .
-git remote add origin git@github.com:ackama/your-cwp-project.git
-git commit -m "Project Initialisation"
-git branch -M main
-git push origin main
-git branch -C deployment
-git push origin deployment
-git branch -D deployment
-```
 
 #### Pipeline Setup
 
@@ -152,8 +90,6 @@ It is also possible to execute CI locally. Refer to
 
 ## Operations
 
-_Edit as necessary_
-
 CI pipelines need to be active and configured
 
 This project follows the following branch convention: **main** Main development
@@ -176,11 +112,11 @@ Secrets are stored encrypted in the CI's config
 
 ## Project Resources:
 
-| **Resource** | **URL**                                             |
-| ------------ | --------------------------------------------------- |
-| Repository   | https://github.com/ackama/silverstripe-cwp-template |
-| Backlog URL  | [ Placeholder ]                                     |
-| Invision     | [ Placeholder ]                                     |
+| **Resource** | **URL**                                               |
+| ------------ | ----------------------------------------------------- |
+| Repository   | https://github.com/ndorfin/silverstripe-cwp-barebones |
+| Backlog URL  | [ Placeholder ]                                       |
+| Invision     | [ Placeholder ]                                       |
 
 ## People Involved
 
@@ -198,11 +134,8 @@ Secrets are stored encrypted in the CI's config
 
 ### Running this app
 
-Clone the project:
-`git clone git@github.com:ackama/your-cwp-project.git`
-
-Once the project is cloned, execute this command:
-
+- Fork this project.
+- Clone your forked repo to your environment.
 - `docker-compose up` will setup your runtime environment.
 
 ### Using your development environment

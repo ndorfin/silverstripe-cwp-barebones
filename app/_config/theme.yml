@@ -1,5 +1,5 @@
 ---
-Name: shaun-bare-bones/theme
+Name: bare-bones/theme
 ---
 SilverStripe\View\SSViewer:
   themes:

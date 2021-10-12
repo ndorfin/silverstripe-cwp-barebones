@@ -1,5 +1,5 @@
 ---
-Name: shaun-bare-bones/cwpcoreenvironmentchecks
+Name: bare-bones/cwpcoreenvironmentchecks
 ---
 SilverStripe\EnvironmentCheck\EnvironmentCheckSuite:
   registered_checks:
@@ -10,7 +10,7 @@ SilverStripe\EnvironmentCheck\EnvironmentCheckSuite:
     health:
       - db
 ---
-Name: shaun-bare-bones/cwpcoresolrenvironmentcheck
+Name: bare-bones/cwpcoresolrenvironmentcheck
 Only:
   moduleexists: 'cwp/cwp-search'
 ---

@@ -1,6 +1,6 @@
 <?php
 
-namespace ShaunBareBones\Tests\Search;
+namespace BareBones\Tests\Search;
 
 use Page;
 use SilverStripe\Blog\Model\BlogPost;

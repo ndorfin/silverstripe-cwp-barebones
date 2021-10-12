@@ -28,10 +28,10 @@
     },
     "autoload": {
         "psr-4": {
-            "ShaunBareBones\\": [
+            "BareBones\\": [
                 "app/src/"
             ],
-            "ShaunBareBones\\Tests\\": [
+            "BareBones\\Tests\\": [
                 "app/tests/"
             ]
         },

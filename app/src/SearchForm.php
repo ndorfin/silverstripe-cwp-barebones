@@ -1,6 +1,6 @@
 <?php
 
-namespace ShaunBareBones;
+namespace BareBones;
 
 use SilverStripe\Control\Controller;
 use SilverStripe\FullTextSearch\Search\FullTextSearch;
@@ -22,7 +22,7 @@ class SearchForm extends \SilverStripe\CMS\Search\SearchForm
 
         $attrs = array_merge(
             parent::getAttributes(),
-            ['id' => 'ShaunBareBones_' . $this->FormName()],
+            ['id' => 'BareBones_' . $this->FormName()],
             $this->attributes
         );
 

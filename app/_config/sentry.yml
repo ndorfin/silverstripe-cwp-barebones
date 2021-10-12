@@ -1,5 +1,5 @@
 ---
-Name: shaun-bare-bones/sentryconfig-3
+Name: bare-bones/sentryconfig-3
 After:
   - 'sentry-config'
 Except:

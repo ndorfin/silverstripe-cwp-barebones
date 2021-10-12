@@ -21,7 +21,7 @@ services:
       - database
       - smtp
     environment:
-      APP_NAME: "ShaunBareBones"
+      APP_NAME: "BareBones"
       APP_ENV: dev
 
       # Silverstripe config

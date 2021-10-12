@@ -5,4 +5,4 @@
  * Ref: https://github.com/silverstripe/silverstripe-framework/issues/5844
  */
 
-class PageController extends ShaunBareBones\PageController {}
+class PageController extends BareBones\PageController {}
