@@ -1,0 +1,7 @@
+---
+Name: shaun-bare-bones/theme
+---
+SilverStripe\View\SSViewer:
+  themes:
+    - '$public'
+    - '$default'

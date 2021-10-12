@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# Echo all commands just before they are executed
+set -e
+
+bash ./bin/composer install --no-scripts
+
+bash ./bin/npm ci
+
+bash ./bin/composer vendor-expose
+
+sspak_file="$1"
+if [ "$sspak_file" ]; then
+  echo "loading $sspak_file..."
+  sh ./bin/sspak load "$sspak_file" --drop-db
+fi
+
+bash ./bin/sake dev/build flush=1

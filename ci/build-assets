@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# Echo all commands just before they are executed
+set -x
+
+# Stop processing this script if any of the commands we run return an error
+# (i.e. exit with a non-zero status)
+set -e
+
+composer install --no-scripts --no-interaction --no-progress --no-suggest
+npm ci
+npm run package
+composer vendor-expose

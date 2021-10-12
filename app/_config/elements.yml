@@ -1,0 +1,6 @@
+---
+Name: shaun-bare-bones/elements-config
+---
+Page:
+  extensions:
+    - DNADesign\Elemental\Extensions\ElementalPageExtension

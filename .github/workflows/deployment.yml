@@ -1,0 +1,43 @@
+name: Deployment
+
+on:
+  push:
+    tags:
+      - 'release-*'
+
+jobs:
+  deployment:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_REF: 'deployment'
+      BUILD_NUMBER: ${{ github.run_number }}
+      TAG: ${{ github.ref }}
+      SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      HEROKU_APP_ID: ${{ secrets.HEROKU_APP_ID }}
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+    steps:
+      ## Prevent multiple workflows running
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.5.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Check out repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # Pull the main branch into the branch of your PR
+      - name: Deploy version checkout
+        run: ./ci/deploy-checkout
+
+      - name: Deploy to Dev Environment
+        run: ./ci/deploy-to-dev
+
+#      - name: Deploy to UAT Environment
+#        run: ./ci/deploy-to-uat
+#
+#      - name: Deploy to Production Environment
+#        run: ./ci/deploy-to-production
+

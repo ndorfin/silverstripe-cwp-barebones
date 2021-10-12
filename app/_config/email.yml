@@ -1,0 +1,21 @@
+---
+Name: shaun-bare-bones/email-config-production
+Only:
+  environment: 'prod'
+---
+SilverStripe\Control\Email\Email:
+  admin_email:
+    no-reply@shaun-bare-bones.cwp.govt.nz: 'ShaunBareBones'
+---
+
+---
+Name: shaun-bare-bones/email-config-uat
+Only:
+  environment: 'test'
+---
+SilverStripe\Control\Email\Email:
+  admin_email:
+    no-reply@shaun-bare-bones-uat.cwp.govt.nz:
+      'ShaunBareBones UAT'
+---
+

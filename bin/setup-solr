@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Echo all commands just before they are executed
+set -e
+
+# Setup Indexes
+./bin/sake dev/tasks/Solr_Configure flush=1
+
+# Trigger Reindexing
+./bin/sake dev/tasks/Solr_Reindex flush=1

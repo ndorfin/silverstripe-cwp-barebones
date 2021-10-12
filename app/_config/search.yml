@@ -1,0 +1,15 @@
+---
+Name: shaun-bare-bones/searchindexes
+---
+SilverStripe\FullTextSearch\Search\FullTextSearch:
+  indexes:
+    - ShaunBareBones\SearchIndex
+---
+Name: shaun-bare-bones/searchconfig
+After: cwpsearch
+---
+SilverStripe\Core\Injector\Injector:
+  CWP\Search\CwpSearchEngine.search_index:
+    class: ShaunBareBones\SearchIndex
+  SilverStripe\CMS\Search\SearchForm:
+    class: ShaunBareBones\SearchForm

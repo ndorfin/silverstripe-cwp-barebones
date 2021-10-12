@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+# Echo all commands just before they are executed
+set -x
+
+# Stop processing this script if any of the commands we run return an error
+# (i.e. exit with a non-zero status)
+set -e
+
+# This script attempts a git fetch in CWP, waits for it to be ready
+# and creates a deployment request.
+
+# Creates a git fetch request
+# shellcheck disable=SC2086
+curl -X POST -u "$CWP_DASH_USER":$CWP_DASH_TOKEN \
+  https://dash.cwp.govt.nz/naut/project/$CWP_STACK_ID/git/fetches \
+  -H 'Content-Type: application/json' -H 'Accept: application/json' >response.json
+
+# We extract the request's status URL from the response
+LINK=$(cat response.json | jq -r '.data.links.self')
+
+# We extract the request's status URL from the response.
+# It will always be "Queued" at first.
+STATUS=$(cat response.json | jq -r '.data.attributes.status')
+
+# We use a while loop to wait a few seconds, and query CWP on the
+# fetch request. If the query has finished, our status will change
+# to Complete. If status is not achieved we loop again.
+while [ "$STATUS" != "Complete" ]; do
+  sleep 15
+  STATUS=$(
+    # shellcheck disable=SC2086
+    curl --silent -X GET -u "$CWP_DASH_USER":"$CWP_DASH_TOKEN" "$LINK" \
+      -H 'Content-Type: application/json' -H 'Accept: application/json' \
+      | jq -r '.data.attributes.status'
+  )
+done
+
+# Finally we create a deployment request for UAT
+# The deployment bypasses approvals and gets deployed immediately,
+# as per the `bypass_and_start` parameter in the request.
+curl -X POST -u "$CWP_DASH_USER":"$CWP_DASH_TOKEN" \
+  https://dash.cwp.govt.nz/naut/project/"$CWP_STACK_ID"/environment/uat/deploys \
+  -H 'Content-Type: application/json' -H 'Accept: application/json' \
+  --data "{ \
+            \"ref\": \"${BITBUCKET_TAG}\", \
+            \"ref_type\": \"tag\", \
+            \"title\": \"Deployment of site to UAT: ${BITBUCKET_TAG}\", \
+            \"summary\": \"--\", \
+            \"bypass_and_start\": true, \
+            \"locked\": false \
+         }"

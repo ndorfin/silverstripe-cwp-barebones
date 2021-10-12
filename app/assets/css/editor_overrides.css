@@ -1,0 +1,12 @@
+#Root_Main {
+    display: flex;
+    flex-direction: column;
+}
+
+#Form_EditForm_PageHeading_Holder {
+    order: -1;
+}
+
+#Form_EditForm_Title_Holder {
+    order: -2;
+}

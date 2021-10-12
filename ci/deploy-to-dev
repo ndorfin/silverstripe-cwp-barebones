@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+# Echo all commands just before they are executed
+set -x
+
+# Stop processing this script if any of the commands we run return an error
+# (i.e. exit with a non-zero status)
+set -e
+
+# If we haven't setup a HEROKU_APP_ID skip this
+if [ -z ${HEROKU_APP_ID+x} ]
+then
+  echo 'Skipping DEV deployment'
+  exit 0
+fi
+
+# This script deploys our app to Heroku as a Dev environment
+# CWP does not provide a DEV environment by default
+git push -f https://heroku:"$HEROKU_API_KEY"@git.heroku.com/"$HEROKU_APP_ID".git HEAD:refs/heads/main
+
+# Heroku deployment stuff
+curl https://cli-assets.heroku.com/install.sh | sh
+
+# Reinstall vendors and expose vendor assets
+heroku run --app "$HEROKU_APP_ID" "composer install --no-scripts"
+heroku run --app "$HEROKU_APP_ID" "composer vendor-expose"
+heroku run --app "$HEROKU_APP_ID" "sake dev/build flush=1"

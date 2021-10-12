@@ -1,0 +1,7 @@
+# Public Root
+public/resources/
+
+# Dependencies
+node_modules/
+themes/
+vendor/

@@ -1,0 +1,126 @@
+##
+# https://docs.docker.com/compose/compose-file/
+#
+version: "3.7"
+
+services:
+
+  ###
+  # This container runs our SilverStripe application
+  app:
+    build:
+      context: ./
+      dockerfile: dev/Dockerfile.silverstripe
+    ports:
+      # host:container
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - database
+    links:
+      - database
+      - smtp
+    environment:
+      APP_NAME: "ShaunBareBones"
+      APP_ENV: dev
+
+      # Silverstripe config
+      SS_BASE_URL: https://localhost
+      SS_DATABASE_CLASS: MySQLDatabase
+      SS_DATABASE_SERVER: database
+      SS_DATABASE_USERNAME: root
+      SS_DATABASE_PASSWORD:
+      SS_DATABASE_PORT: 3306
+      SS_DATABASE_NAME: app
+      SS_DEPRECATION_ENABLED: "TRUE"
+      SS_ENVIRONMENT_TYPE: dev
+      SS_DEFAULT_ADMIN_USERNAME: admin
+      SS_DEFAULT_ADMIN_PASSWORD: admin
+      SS_VENDOR_METHOD: symlink
+      SS_USE_BASIC_AUTH: 0
+      SS_MFA_SECRET_KEY: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      SS_DOCKER: 1
+      SS_SOLR_ENABLED: 1
+
+      # PHP Config
+      MAX_EXECUTION_TIME: 90
+      MEMORY_LIMIT: 256M
+
+      # Composer Config
+      COMPOSER_MEMORY_LIMIT: -1
+
+      # XDebug Config
+      XDEBUG_PROFILER_ENABLE: 0
+      XDEBUG_REMOTE_AUTOSTART: 0
+      XDEBUG_REMOTE_ENABLE: 0
+      XDEBUG_REMOTE_HOST: host.docker.internal
+      XDEBUG_REMOTE_PORT: 9000
+    volumes:
+      - ./composer.json:/var/www/composer.json:cached
+      # - ./composer.lock:/var/www/composer.lock:cached
+
+      - ./package.json:/var/www/package.json:cached
+      - ./package-lock.json:/var/www/package-lock.json:cached
+      - ./webpack.mix.js:/var/www/webpack.mix.js:cached
+
+      - ./phpunit.xml:/var/www/phpunit.xml:cached
+
+      ##
+      # Mount Application files
+      - ./app:/var/www/app:cached
+
+      ##
+      # CI Scripts
+      - ./ci:/var/www/ci:cached
+
+      ##
+      # Shared volume to handle solr configuration files
+      - solr-data-sync:/var/solr:rw
+  ##
+  # * https://www.cwp.govt.nz/developer-docs/en/2/working_with_projects/infrastructural_considerations
+  # * https://hub.docker.com/_/mariadb
+  # * CWP is using MariaDB and so are we
+  database:
+    image: mariadb:10.3
+    ports:
+      # host:container
+      - "3306:3306"
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'YES'
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app
+      MYSQL_DATABASE: app
+    volumes:
+      ##
+      # The database image creates and mounts (at /var/lib/mysql) an
+      # anonymous volume by default. We override this with a named volume
+      # because a volume with a sensible name is easier to manage and
+      # clean up later on.
+      - db-data:/var/lib/mysql
+
+      ##
+      # * The MySQL container will execute files with extensions .sh,
+      #   .sql and .sql.gz that are found in `/docker-entrypoint-initdb.d`.
+      # * Files will be executed in alphabetical order.
+      # * SQL files will be imported by default to the database specified
+      #   by the MYSQL_DATABASE variable.
+      # * You can easily populate your mysql services by mounting a SQL
+      #   dump into that directory and provide custom images with
+      #   contributed data.
+      #
+      # path-on-host:absolute-path-on-container
+      # - "./data/:/docker-entrypoint-initdb.d/"
+  solr:
+    image: geerlingguy/solr:4.x
+    ports:
+      - "8983:8983"
+    command: ["/opt/solr/bin/solr", "start", "-p", "8983", "-s", "/var/solr", "-f"]
+    volumes:
+      - solr-data-sync:/var/solr:rw
+  smtp:
+    image: djfarrelly/maildev
+    ports:
+      - "1080:80"
+volumes:
+  db-data:
+  solr-data-sync:

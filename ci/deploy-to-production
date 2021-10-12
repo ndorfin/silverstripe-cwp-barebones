@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+# Echo all commands just before they are executed
+set -x
+
+# Stop processing this script if any of the commands we run return an error
+# (i.e. exit with a non-zero status)
+set -e
+
+# Creates a deployment request for Production
+# The deployment gets queued and will be waiting for approval
+# from a release manager in CWP's dashboard,
+# as per the `bypass_and_start` parameter in the request.
+curl -X POST -u "$CWP_DASH_USER":"$CWP_DASH_TOKEN" \
+  https://dash.cwp.govt.nz/naut/project/"$CWP_STACK_ID"/environment/prod/deploys \
+  -H 'Content-Type: application/json' -H 'Accept: application/json' \
+  --data "{ \
+            \"ref\": \"${BITBUCKET_TAG}\", \
+            \"ref_type\": \"tag\", \
+            \"title\": \"Deployment of site to Production: ${BITBUCKET_TAG}\", \
+            \"summary\": \"--\", \
+            \"bypass_and_start\": false, \
+            \"locked\": false \
+         }"

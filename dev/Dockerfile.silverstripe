@@ -1,0 +1,208 @@
+# Extend from current stable php apache
+FROM php:7.4-apache
+
+# Extra Repositories
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
+
+ENV LC_ALL C.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US.UTF-8
+
+# OS packages
+RUN apt-get -y update; \
+    apt-get -y upgrade;\
+    apt-get install -f -y --no-install-recommends \
+        apt-utils\
+        ssl-cert \
+        mariadb-client \
+        zlib1g-dev \
+        libicu-dev \
+        libpng-dev \
+        libjpeg-dev \
+        libwebp-dev \
+        locales \
+        gcc \
+        g++ \
+        gnupg \
+        build-essential \
+        zip \
+        unzip \
+        curl \
+        git \
+        ssh \
+        jq \
+        nano \
+        vim \
+        apt-utils \
+        net-tools \
+        iputils-ping \
+        iproute2 \
+        nodejs
+
+####
+# PHP Extensions
+#
+
+# PHP extension: gd (PHP 7.4 version)
+RUN apt-get install -y \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    libpng-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd
+
+# PHP extension: internationalisation
+RUN docker-php-ext-configure intl extension; \
+    docker-php-ext-install -j$(nproc) intl
+
+# PHP extension: ZIP support
+RUN apt-get install -y \
+        zlib1g-dev \
+        zip \
+        libzip-dev; \
+    docker-php-ext-configure zip --with-libzip; \
+    docker-php-ext-install -j$(nproc) zip
+
+# PHP extension: Misc
+RUN docker-php-ext-install -j$(nproc) \
+        pdo_mysql \
+        mysqli \
+        bcmath
+
+# PHP extension: xdebug support
+RUN pecl install xdebug; \
+    docker-php-ext-enable xdebug;
+
+# PHP extension: redis
+# RUN pecl install redis-5.1.1 \
+#     && pecl install xdebug-2.8.1 \
+#     && docker-php-ext-enable redis xdebug
+
+# PHP extension: memcached
+# RUN apt-get install -y libmemcached-dev zlib1g-dev \
+#     && pecl install memcached-2.2.0 \
+#     && docker-php-ext-enable memcached
+
+# Install and configure: nullmailer + php sendmail
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends \
+        mailutils \
+        nullmailer; \
+    echo 'localhost' > /etc/nullmailer/defaultdomain; \
+    echo 'mail smtp --port=25' > /etc/nullmailer/remotes; \
+    chmod 600 /etc/nullmailer/remotes
+COPY ["dev/conf/app/usr/local/etc/php/conf.d/sendmail.ini","/usr/local/etc/php/conf.d/sendmail.ini"]
+
+# Update npm and yarn
+RUN npm install -g npm
+RUN npm install -g yarn
+
+# Clean up!
+RUN apt-get clean; \
+    apt-get autoclean; \
+    rm -r /var/lib/apt/lists/*
+
+# PHP Configuration
+COPY ["./dev/conf/app/usr/local/etc/php/php.ini", "/usr/local/etc/php/php.ini"]
+COPY ["./dev/conf/app/usr/local/etc/php/conf.d/*", "/usr/local/etc/php/conf.d/"]
+
+# Apache Configuration
+COPY ["./dev/conf/app/etc/apache2/sites-enabled/000-default.conf", "/etc/apache2/sites-enabled/000-default.conf"]
+RUN \
+    # Generates default SSL certificates
+    make-ssl-cert generate-default-snakeoil; \
+    # Generates SSL certificates for localhost
+    cat /etc/ssl/openssl.cnf > /tmp/SSL_SAN_config; \
+    printf "[SAN]\nsubjectAltName=DNS:localhost" >> /tmp/SSL_SAN_config; \
+    openssl \
+        req -newkey rsa:2048 -x509 -nodes \
+        -keyout /etc/ssl/private/localhost.key \
+        -new \
+        -out /etc/ssl/certs/localhost.cert \
+        -subj /CN=localhost \
+        -reqexts SAN \
+        -extensions SAN \
+        -config /tmp/SSL_SAN_config \
+        -sha256 -days 365; \
+    # Adds both runtime users to the ssl-cert group
+    usermod --append --groups ssl-cert root; \
+    usermod --append --groups ssl-cert www-data;\
+    # Enables apache modules
+    a2enmod headers rewrite ssl
+
+####
+# Runtime user/project/directory setup
+####
+
+RUN \
+    # Changes user id of www-data to 1000 for permissions and shares
+    # compatibility with other machines
+    usermod -u 1000 www-data; \
+    groupmod -g 1000 www-data; \
+    # Removes files we won't use from /var/www
+    rm -rvf /var/www/*; \
+    # Gives ownership of /var/solr to www-data to allow index creation
+    mkdir /var/solr && chown -R www-data:www-data /var/solr; \
+    # Gives ownership of npm tmp dir to www-data
+    mkdir /var/www/.npm && chown -R www-data:www-data /var/www/.npm; \
+    # Gives ownership of composer tmp dir to www-data to allow index creation
+    mkdir -p /var/www/.composer/cache && chown -R www-data:www-data /var/www/.composer
+
+# Install SSPak and Composer
+RUN \
+    # Installs SSPAK for SilverStripe
+    # https://github.com/silverstripe/sspak
+    curl -sS https://silverstripe.github.io/sspak/install | php -- /usr/local/bin && \
+    # Composer binary  + install version 1
+    curl -sS https://getcomposer.org/installer | MEMORY_LIMIT=-1 php -- --filename=composer --install-dir=/usr/local/bin --1 && \
+    # Makes binaries specified by composer accessible to bash
+    echo 'PATH=$PATH:/var/www/vendor/bin:/usr/local/bin' >> /etc/bash.bashrc && \
+    # Configure ls with colours
+    echo 'export LS_OPTIONS="--color=auto"' >> /etc/bash.bashrc && \
+    echo 'alias ls="ls $LS_OPTIONS"' >> /etc/bash.bashrc
+
+# Explicitly set the WORKDIR so that when we run drush commands via
+# `docker-compose exec` they will work because the default working dir is the
+# Drupal root dir.
+WORKDIR /var/www
+
+# Give the www-data user a shell so that we can 'su' and 'sudo' to that user
+# And make the www-user own all files in /var/www
+RUN chsh -s /bin/bash www-data && \
+    chown -R www-data:www-data /var/www
+
+# Switch to the www-data (uid:1000:gid:1000) user
+USER 1000:1000
+
+## Dependencies and Build Routines
+# Copy the composer files in so they are available for 'composer install'
+# Copy the npm files in so they are available for the 'npm ci'
+# Copy webpack config
+COPY --chown=1000:1000 ["./composer.json", "./package.json", "./package-lock.json", "./webpack.mix.js", "/var/www/"]
+
+## Application Files
+# Copy public webroot. If this directory doesn't exist, the webroot will be
+# assumed to be the current working directory when installing
+COPY --chown=1000:1000 ["./public", "/var/www/public"]
+COPY --chown=1000:1000 ["./app", "/var/www/app"]
+
+# Install and build application
+# We use MEMORY_LIMIT=-1 because php.ini uses this ENV value,
+# It is set in docker-compose but not available on build
+RUN MEMORY_LIMIT=-1 composer install --no-scripts
+RUN npm ci
+RUN npm run build
+RUN MEMORY_LIMIT=-1 composer vendor-expose
+
+# Remove the composer and npm files from the image because we will mount our own
+# copies when we start the container. Removing the files should help avoid confusing
+# situations where the old files are still around because we made an error with
+# the volume mount.
+RUN rm composer.json package.json package-lock.json webpack.mix.js
+
+# Go back to the user
+USER root:root
+
+ENTRYPOINT ["docker-php-entrypoint"]
+
+EXPOSE 80
+CMD ["apache2-foreground"]

@@ -1,0 +1,5 @@
+---
+Name: shaun-bare-bones/mfa
+---
+SilverStripe\TOTP\RegisterHandler:
+  secret_length: 64

@@ -1,0 +1,130 @@
+name: Release Build
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  release-test:
+    runs-on: ubuntu-latest
+    env:
+      MAIN_REF: 'main'
+      DEPLOY_REF: 'deployment'
+      BUILD_NUMBER: ${{ github.run_number }}
+    steps:
+      ## Prevent multiple workflows running
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.5.0
+        with:
+          access_token: ${{ github.token }}
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      # Pull the main branch into the branch of your PR
+      - name: Build Merged Codebase
+        run: ./ci/build-release-test
+
+      # In this step, this action saves a list of existing images,
+      # the cache is created without them in the post run.
+      # It also restores the cache if it exists.
+      - uses: satackey/action-docker-layer-caching@v0.0.11
+        # Ignore the failure of a step and avoid terminating the job.
+        continue-on-error: true
+
+      - name: Show docker command versions (for later debugging)
+        run: |
+          docker --version
+          docker-compose --version
+
+      - name: Build Containers
+        run: docker-compose build --pull
+
+      - name: Run Containers
+        run: docker-compose up -d
+
+      - name: Wait for MariaDB container to start
+        # MariaDB isn't fully ready until it has said "ready for connections"
+        # **twice**. This while loop gathers the log output from the MariaDB
+        # container and looks for that magic string. It will loop (sleeping 1
+        # second on each loop) while it waits to see the magic string twice.
+        run: "while [ $(docker-compose logs database |grep 'ready for connections' | wc -l | tr -d ' ') -ne '2' ]; do echo 'sleeping...' && sleep 1; done"
+
+      - name: Dump info about running containers (for future debugging)
+        run: docker ps -a
+
+      # Setup Application
+      - name: Setup App
+        run: ./bin/setup
+
+      # Setup Solr Indexing
+      - name: Setup Solr
+        run: ./bin/setup-solr
+
+      # Run Unit/Functional Tests
+      - name: Run tests
+        run: docker-compose exec -T app ./ci/run-tests
+
+      # Stops and Remove running containers
+      - name: Stop Containers
+        run: docker-compose down -v
+
+  release-build:
+    runs-on: ubuntu-latest
+    needs: [release-test]
+    env:
+      MAIN_REF: 'main'
+      DEPLOY_REF: 'deployment'
+      BUILD_NUMBER: ${{ github.run_number }}
+    steps:
+      ## Prevent multiple workflows running
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.5.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Check out repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Setup GIT identity
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      # Pull the main branch into the branch of your PR
+      - name: Build Merged Codebase
+        run: ./ci/build-release-codebase
+
+      # In this step, this action saves a list of existing images,
+      # the cache is created without them in the post run.
+      # It also restores the cache if it exists.
+      - uses: satackey/action-docker-layer-caching@v0.0.11
+        # Ignore the failure of a step and avoid terminating the job.
+        continue-on-error: true
+
+      - name: Show docker command versions (for later debugging)
+        run: |
+          docker --version
+          docker-compose --version
+
+      - name: Run Containers
+        run: docker-compose up --detach --no-deps app
+
+      - name: Dump info about running containers (for future debugging)
+        run: docker ps -a
+
+      # Setup Application
+      - name: Build Release and Assets
+        run: |
+          docker-compose exec -T --user root app chown www-data:www-data public/dist
+          docker-compose exec -T --user www-data app ci/build-assets
+
+      - name: Build Version
+        run: ci/build-release-version
+
+      # Stops and Remove running containers
+      - name: Stop Containers
+        run: docker-compose down -v

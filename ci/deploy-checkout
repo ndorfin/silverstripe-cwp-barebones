@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# Echo all commands just before they are executed
+set -x
+
+# Stop processing this script if any of the commands we run return an error
+# (i.e. exit with a non-zero status)
+set -e
+
+# Make sure we are on the latest version
+git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+git fetch origin
+git checkout "${TAG}"
+
+git status

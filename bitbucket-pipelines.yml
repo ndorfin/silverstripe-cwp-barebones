@@ -1,0 +1,195 @@
+definitions:
+  services:
+    mysql:
+      image: mariadb:10.3
+      environment:
+        MYSQL_ALLOW_EMPTY_PASSWORD: 'YES'
+        MYSQL_DATABASE: 'app'
+        MYSQL_USER: 'root'
+        MYSQL_PASSWORD: "\0"
+    solr:
+      image: geerlingguy/solr:4.x
+  caches:
+    npm: ~/.npm
+  steps:
+    - step: &build-deps-caches
+        name: Install Dependencies
+        image: prefernz/php-node:7.3
+        caches:
+          - composer
+          - npm
+          - node
+        script:
+          - npm audit
+          - |
+            composer install --no-scripts --no-interaction --no-progress --no-suggest
+          - npm ci
+
+    ## Experimental Docker Compose Approach to test and deploy
+    - step: &docker-build
+        name: Builds Docker Assets
+        services:
+          - docker
+        caches:
+          - docker
+        script:
+          - bin/get-docker-compose
+          - bin/docker-compose -f docker-compose-ci.yml build app
+        artifacts:
+          - /usr/local/bin/docker-compose
+
+    - step: &run-tests-step-in-docker
+        name: Run tests
+        services:
+          - docker
+          - mysql
+          - solr
+        caches:
+          - docker
+        script:
+          - export SENTRY_DSN=""
+          - export COMPOSE_INTERACTIVE_NO_CLI=1
+          - bin/docker-compose -f docker-compose-ci.yml -d up
+    # // Experimental
+
+    - step: &run-tests-step
+        name: Run tests
+        image: prefernz/php-node:7.3
+        services:
+          - mysql
+        caches:
+          - composer
+          - npm
+          - node
+        script:
+          - |
+            composer install --no-scripts --no-interaction --no-progress --no-suggest
+          - composer vendor-expose
+          - npm ci
+          - npm run package
+          - vendor/bin/phpunit
+    - step: &build-release
+        name: Builds Release Version
+        image: prefernz/php-node:7.3
+        caches:
+          - composer
+          - npm
+          - node
+        # This script pulls main, builds the project and creates a
+        # release version which then it's committed onto the deployment
+        # branch of the repository. The said commit gets tagged with the
+        # current pipeline build number.
+        script:
+          - git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+          - git fetch origin
+          - git checkout --track origin/deployment
+          - git pull
+          - git merge --no-commit --quiet main
+          - |
+            composer install --no-scripts --no-interaction --no-progress --no-suggest
+          - composer vendor-expose
+          - npm ci
+          - npm run package
+          - git add --force --all public/dist
+          - |
+            git commit --allow-empty -m "Build version ${BITBUCKET_BUILD_NUMBER}"
+          - |
+            git tag -am "Tagging for release ${BITBUCKET_BUILD_NUMBER}" release-${BITBUCKET_BUILD_NUMBER}
+          - git push origin deployment
+          - git push origin release-${BITBUCKET_BUILD_NUMBER}
+    - step: &deploy-dev
+        name: Deploys to Development
+        deployment: development
+        image: prefernz/php-node:7.3
+        script:
+          - git checkout ${BITBUCKET_TAG}
+          - git pull
+          - |
+            git push -f https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_APP_ID.git HEAD:main
+    - step: &deploy-uat
+        name: Deploys to UAT
+        deployment: uat
+        image: prefernz/php-node:7.3
+        # This script attempts a git fetch in CWP, waits for it to be ready
+        # and creates a deployment request.
+        script:
+          # Creates a git fetch request
+          - >
+            curl -X POST -u $CWP_DASH_USER:$CWP_DASH_TOKEN \
+              https://dash.cwp.govt.nz/naut/project/$CWP_STACK_ID/git/fetches \
+              -H 'Content-Type: application/json' -H 'Accept: application/json' > response.json
+          # We extract the request's status URL from the response
+          - >
+            LINK=$(cat response.json | jq -r '.data.links.self')
+          # We extract the request's status URL from the response.
+          # It will always be "Queued" at first.
+          - >
+            STATUS=$(cat response.json | jq -r '.data.attributes.status')
+          # We use a while loop to wait a few seconds, and query CWP on the
+          # fetch request. If the query has finished, our status will change
+          # to Complete. If status is not achieved we loop again.
+          - >
+            while [ "$STATUS" != "Complete" ]; do
+              sleep 15
+              STATUS=$(curl --silent -X GET -u $CWP_DASH_USER:$CWP_DASH_TOKEN $LINK \
+                          -H 'Content-Type: application/json' -H 'Accept: application/json' | jq -r '.data.attributes.status')
+            done
+          # Finally we create a deployment request for UAT
+          # The deployment bypasses approvals and gets deployed immediately,
+          # as per the `bypass_and_start` parameter in the request.
+          - >
+            curl -X POST -u $CWP_DASH_USER:$CWP_DASH_TOKEN \
+              https://dash.cwp.govt.nz/naut/project/$CWP_STACK_ID/environment/uat/deploys \
+              -H 'Content-Type: application/json' -H 'Accept: application/json' \
+              --data "{ \
+                        \"ref\": \"${BITBUCKET_TAG}\", \
+                        \"ref_type\": \"tag\", \
+                        \"title\": \"Deployment of site to UAT: ${BITBUCKET_TAG}\", \
+                        \"summary\": \"--\", \
+                        \"bypass_and_start\": true, \
+                        \"locked\": false \
+                     }"
+    - step: &deploy-production
+        name: Deploys to Production
+        deployment: production
+        trigger: manual
+        image: prefernz/php-node:7.3
+        script:
+          # Creates a deployment request for Production
+          # The deployment gets queued and will be waiting for approval
+          # from a release manager in CWP's dashboard,
+          # as per the `bypass_and_start` parameter in the request.
+          - >
+            curl -X POST -u $CWP_DASH_USER:$CWP_DASH_TOKEN \
+              https://dash.cwp.govt.nz/naut/project/$CWP_STACK_ID/environment/prod/deploys \
+              -H 'Content-Type: application/json' -H 'Accept: application/json' \
+              --data "{ \
+                        \"ref\": \"${BITBUCKET_TAG}\", \
+                        \"ref_type\": \"tag\", \
+                        \"title\": \"Deployment of site to Production: ${BITBUCKET_TAG}\", \
+                        \"summary\": \"--\", \
+                        \"bypass_and_start\": false, \
+                        \"locked\": false \
+                     }"
+
+pipelines:
+  pull-requests:
+    '**':
+      - step: *build-deps-caches
+      - step: *run-tests-step
+
+  branches:
+    'php-7.4-updates':
+     - step: *docker-build
+     - step: *run-tests-step-in-docker
+    main:
+      - step: *build-deps-caches
+      - step: *run-tests-step
+      - step: *build-release
+
+  tags:
+    'release-*':
+      # The commented out step deploys to Heroku
+      # - step: *deploy-dev
+      - step: *deploy-uat
+      - step: *deploy-production

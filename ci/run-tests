@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# Echo all commands just before they are executed
+set -x
+
+# Stop processing this script if any of the commands we run return an error
+# (i.e. exit with a non-zero status)
+set -e
+
+cd /var/www
+
+# Show symfony deprecation warnings but don't fail on them. Many
+# warnings come from plugins we depend on and don't control.
+SYMFONY_DEPRECATIONS_HELPER=weak vendor/bin/phpunit --verbose app/tests/

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+# Echo all commands just before they are executed
+set -x
+
+# Stop processing this script if any of the commands we run return an error
+# (i.e. exit with a non-zero status)
+set -e
+
+# Build a release version by merging `main` into `deployment`
+git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+git fetch origin
+git checkout --track origin/"$DEPLOY_REF"
+git merge --no-commit --quiet --allow-unrelated-histories origin/"$MAIN_REF"
+
+# Git status for debugging
+git status

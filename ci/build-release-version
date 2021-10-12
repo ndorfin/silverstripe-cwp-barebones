@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# Echo all commands just before they are executed
+set -x
+
+# Stop processing this script if any of the commands we run return an error
+# (i.e. exit with a non-zero status)
+set -e
+
+# Takes built assets and commits them into a release commit
+git add --force --all public/dist
+git commit --allow-empty -m "Build version ${BUILD_NUMBER}"
+git tag -am "Tagging for release ${BUILD_NUMBER}" release-"${BUILD_NUMBER}"
+git push origin deployment
+git push origin release-"${BUILD_NUMBER}"

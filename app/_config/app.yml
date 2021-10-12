@@ -1,0 +1,9 @@
+---
+Name: shaun-bare-bones
+---
+SilverStripe\Core\Manifest\ModuleManifest:
+  project: 'shaun-bare-bones'
+
+SilverStripe\Admin\LeftAndMain:
+  extra_requirements_css:
+    - public/css/editor_overrides.css
